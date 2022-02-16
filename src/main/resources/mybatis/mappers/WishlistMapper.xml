@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hta.lecture.mapper.WishlistMapper">
+	
+	<insert id="addWishList" parameterType="com.hta.lecture.vo.Wishlist">
+		insert into final_wish_tb
+			(wish_no, user_no, class_no)
+		values
+			(wish_no_seq.nextval, #{userNo}, #{classNo})
+	</insert>
+	
+	<delete id="deleteWishListByNo" parameterType="int">
+	   delete from final_wish_tb
+	   where 
+	   	wish_no = #{value}
+	</delete>
+	
+	<delete id="deleteWishListByUserNoClassNo" parameterType="com.hta.lecture.vo.Wishlist">
+	   delete from final_wish_tb
+	   where 
+	   	user_no = #{userNo}
+	   	and class_no = #{classNo}
+	</delete>
+	
+	<select id="getWishClasstByUserNo" parameterType="int" resultType="com.hta.lecture.dto.WishlistDto" >
+		select
+	    		  A.class_no 				as classNo,
+                 A.class_title				as title,
+                 A.class_price				as price,
+                 A.class_discountprice  	as discountPrice,
+                 a.class_difficultly        as difficulty,
+                 A.class_image				as image,
+                 B.teacher_name			    as teacherName,
+                 C.wish_no					as wishNo,
+                 C.user_no					as userNo,
+                 d.category_name            as category 
+             from
+                 final_class_tb A, final_teacher_tb B, final_wish_tb C, final_category_tb D
+             where
+                 A.teacher_no = B.teacher_no 
+                 and A.class_no = C.class_no
+                 and a.category_no = d.category_no
+                 and C.user_no = #{value}
+	</select>
+	
+	<select id="getWishByUserNoClassNo" parameterType="com.hta.lecture.dto.WishlistDto" resultType="com.hta.lecture.dto.WishlistDto">
+		select
+			wish_no			as wishNo,
+			class_no		as classNo,
+			user_no			as userNo
+		from 
+			final_wish_tb
+		where
+			class_no = #{classNo}
+			and user_no = #{userNo}	
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hta.lecture.mapper.BoardMapper">
+	
+<!-- criteria로 board 조회 -->
+	 <select id="getBoardByCriteria" parameterType="com.hta.lecture.web.form.Criteria" resultType="com.hta.lecture.dto.BoardDto">
+	select 
+		A.board_no					boardNo,
+		A.board_category			category,
+		A.board_title				title,
+		A.board_content				content,
+		A.board_status				Status,
+		A.board_created_date		createdDate,
+		A.board_update_date			updateDate,
+		A.board_delete_date			deleteDate,
+		A.board_like_cnt			likeCnt,
+		A.board_class_title			classTitle,
+		A.board_comment_cnt			commentCnt,
+		B.user_name					name	
+	from 
+		final_board_tb A, final_user_tb B
+	where 
+		A.user_no = B.user_no
+		and A.board_deleted = 'N'
+		and A.board_category = #{category}
+		<if test="status != null">
+		   and A.board_status = #{status}
+		</if>
+		<if test="search != null">
+		   and (A.board_title like '%' ||  #{search} || '%')
+		</if>
+		<if test="tags != null">
+		and A.board_boardNo in (select A.board_boardNo
+		             from final_tag_tb
+		             where C.tag_name in (
+			<foreach index="index"  item="tag" collection="tags" separator=", ">
+			#{tag}
+			</foreach>
+							     )
+		)
+		</if>
+		<if test="sort == 'date'">
+		 order by A.board_created_date desc
+		</if>
+		<if test="sort == 'like'">
+		 order by A.board_like_cnt desc
+		</if>
+		<if test="sort == 'reply'">
+		 order by A.board_comment_cnt desc
+		</if>
+	</select>
+	
+<!-- Board 추가 -->	
+	<insert id="addBoard" parameterType="com.hta.lecture.vo.Board" >
+		<selectKey keyProperty="boardNo" resultType="int" order="BEFORE">
+			select board_no_seq.nextval
+			from dual
+		</selectKey>
+		insert into final_board_tb
+		(user_no,board_no, board_category, board_title, board_content, board_status)
+		values
+		(#{userNo},#{boardNo}, #{category}, #{title}, #{content}, #{status})
+	</insert>
+	
+<!-- Tag 추가 -->	
+	<insert id="addTag" parameterType="com.hta.lecture.vo.Tag" >
+		insert into final_tag_tb
+		(board_no, tag_no, tag_name)
+		values
+		(#{boardNo}, tag_no_seq.nextval, #{tagName})
+	</insert>
+<!-- 글번호로 Board조회 -->
+	<select id="getBoardByNo" parameterType="int" resultType="com.hta.lecture.vo.Board">
+		select
+			board_no				boardNo,
+			board_category			category,
+			board_title				title,
+			board_content			content,
+			board_status			status,
+			board_created_date		createdDate,
+			board_update_date		updateDate,
+			board_delete_date		deleteDate,
+			board_like_cnt			boardLikeCnt,
+			board_comment_cnt		commentCnt,
+			class_no				classNo,
+			user_no					userNo
+		from
+			final_board_tb
+		where
+			board_no = ${boardNo}
+	</select>
+
+<!--글번호로 글상세정보를 조회-->
+<select id="getBoardDetailDto" parameterType="int" resultType="com.hta.lecture.dto.BoardDetailDto">
+	select 
+		A.board_no					boardNo,
+		A.board_title				title,
+		B.user_name					name,
+		A.board_content				content,
+		A.board_status				status,
+		A.board_created_date		createdDate,
+		A.board_update_date			updateDate,
+		A.board_delete_date			deleteDate,
+		A.board_like_cnt			boardLikeCnt,
+		A.board_class_title			classTitle,
+		A.class_no			classNo
+	from 
+		final_board_tb A, final_user_tb B
+	where 
+		A.user_No = b.user_No
+		and A.board_no = #{value}
+	</select>
+
+<!--글번호로 태그조회 -->
+<select id="getBoardTags" parameterType="int" resultType="com.hta.lecture.vo.Tag">
+	select 
+		tag_no 			tagNo,
+		tag_name		tagName
+	from
+		 final_tag_tb
+	where
+		 board_no = #{value}
+</select>
+
+<!-- 해당글번호의 댓글정보 조회 -->
+<select id="getBoardComments" parameterType="int" resultType="com.hta.lecture.vo.BoardComment">
+	select 
+		comment_no						commentNo,
+		nvl(comment_sub_no,0)			commentSubNo,
+		comment_content					commentContent,
+		comment_registration_date		registrationDate,
+		comment_like_cnt				commentLikeCnt,
+		comment_registration_date		registrationDate
+	from
+		final_comment_tb
+	where
+		board_no = #{value}
+	order by comment_no asc, comment_sub_no asc
+</select>
+
+<!-- 답변(댓글)comment 추가 -->
+	<insert id="addComment" parameterType="com.hta.lecture.vo.BoardComment" >
+		insert into final_comment_tb
+		(user_no, board_no,comment_registration_date, comment_no, comment_content )
+		values
+		(#{userNo},#{boardNo},sysDate,comment_no_seq.nextval, #{commentContent})
+	</insert>
+	
+<!-- 대댓글 Recomment 추가 -->
+	<insert id="addRecomment" parameterType="com.hta.lecture.vo.BoardComment" >
+		insert into final_comment_tb
+		(user_no, board_no, comment_no, comment_content, comment_sub_no )
+		values
+		(#{userNo}, #{boardNo}, comment_no_seq.nextval, #{commentContent}, #{commentSubNo})
+	</insert>
+
+<!-- 게시글 수정, 태그수정, 게시글삭제 -->	
+	<update id="updateBoard" parameterType="com.hta.lecture.vo.Board" >
+	update
+		final_board_tb
+	set
+			board_title=#{title}			
+			,board_content=#{content}		
+			,board_status=#{status}			
+			,board_update_date= sysDate
+			,board_like_cnt=#{boardLikeCnt}			
+			,board_comment_cnt=#{commentCnt}				
+	where
+		board_no = #{boardNo}	
+	</update>
+	
+	<update id="updateTag" parameterType="com.hta.lecture.vo.Tag" >
+	update
+		final_tag_tb
+	set
+		tag_name=#{tagName}
+	where
+		board_no = #{boardNo}
+	</update>
+	
+	<update id="deleteBoard" parameterType="int">
+	update final_board_tb
+	set
+		board_deleted = 'Y',
+		board_update_date = sysdate,
+		board_delete_date = sysdate
+	WHERE board_no = #{value}
+	</update>
+
+</mapper>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hta.lecture.mapper.OrderMapper">
+
+<insert id="insertOrder" parameterType="com.hta.lecture.vo.Order">
+	<selectKey keyProperty="orderNo" resultType="int" order="BEFORE">
+		SELECT order_no_seq.nextval
+				from dual
+	</selectKey>
+	insert into final_order_tb		
+	(order_no, user_no, order_user_name, order_sum_price, order_discount_price, order_total_price, order_tel, order_email, order_use_point
+	<if test="useCouponNo != -1">
+	, user_coupon_no
+	</if>
+	)
+	values
+	(#{orderNo},#{userNo},#{payUserName},#{sumPrice},#{discountPrice},#{totalPrice},#{tel},#{email},#{usePoint} 
+	<if test="useCouponNo != -1">
+	,#{useCouponNo}
+	</if>
+	
+	)
+</insert>
+
+<update id="updateOrder">
+</update>
+
+<delete id="deleteOrderByOrderNo">
+
+</delete>
+
+<delete id="deleteOrderByOrderItemNo">
+
+</delete>
+
+<select id="getOrderListByUserNo" parameterType="int" resultType="com.hta.lecture.dto.OrderDto">
+	SELECT
+		A.order_no					orderNo	
+		,A.order_date				orderDate
+		,A.order_status				orderState
+		,B.payment_item_name		orderClassName
+		,A.order_total_price		orderPrice
+		,A.order_discount_price		discountPrice
+		,A.order_sum_price			sumPrice
+		,A.user_coupon_no			useUserCouponNo
+		,A.order_use_point			usePoint
+		,B.payment_method			payMethod	
+	FROM	
+		final_order_tb A, final_payment_tb B
+	WHERE
+		A.order_no = B.order_no
+		and A.user_no = #{value}
+</select>
+
+</mapper>
